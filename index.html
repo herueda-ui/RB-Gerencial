@@ -1,83 +1,67 @@
 <!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#172033">
-  <title>RB Cloud Gerencia</title>
-  <link rel="manifest" href="manifest.json">
-  <style>
-    *{box-sizing:border-box} body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#f3f5f8;color:#172033}
-    header{background:#172033;color:#fff;padding:calc(18px + env(safe-area-inset-top)) 18px 18px;position:sticky;top:0;z-index:3}
-    header .brand{font-size:22px;font-weight:850;letter-spacing:.4px}.sub{opacity:.78;margin-top:4px;font-size:13px}
-    .wrap{padding:14px;max-width:1100px;margin:auto}.hidden{display:none!important}
-    .panel,.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px #17203312}
-    .panel{padding:18px;margin-bottom:14px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{padding:15px;min-height:110px}
-    .label{font-size:13px;color:#677084;font-weight:650}.value{font-size:27px;font-weight:850;margin-top:7px;line-height:1.1}.small{font-size:13px;color:#677084;margin-top:7px}
-    .wide{grid-column:1/-1}.section{font-size:17px;font-weight:800;margin:20px 2px 10px}.statusrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.dot{width:10px;height:10px;border-radius:50%;background:#9aa4b2}.dot.ok{background:#27ae60}.dot.warn{background:#f2994a}.dot.bad{background:#d92d20}
-    button{border:0;border-radius:11px;padding:12px 15px;font-weight:750;background:#2f80ed;color:#fff;font-size:15px}button.secondary{background:#e9eef7;color:#172033}button.danger{background:#f9e4e2;color:#9f221d}
-    input{width:100%;padding:13px;border:1px solid #d9dee8;border-radius:10px;font-size:16px;margin:6px 0 12px;background:#fff;color:#172033}.login{max-width:430px;margin:28px auto}.login h2{margin-top:0}.error{color:#b42318;font-weight:650}.oktxt{color:#16794b}.bar{height:13px;border-radius:999px;background:#e9edf3;overflow:hidden;margin-top:10px}.bar>div{height:100%;background:#2f80ed;width:0;transition:width .35s ease}.split{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:13px;color:#677084}
-    .toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.live{font-weight:750}.footer{text-align:center;color:#7a8497;font-size:12px;padding:18px 0 35px}
-    @media(min-width:760px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.span2{grid-column:span 2}.wide{grid-column:1/-1}}
-  </style>
-</head>
-<body>
-<header><div class="brand">RB PARQUEADERO · CLOUD</div><div class="sub">Panel gerencial en tiempo real · solo lectura</div></header>
+<html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#172033"><title>RB Gerencial</title><link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#f3f5f8;color:#172033}
+header{background:#172033;color:#fff;padding:calc(17px + env(safe-area-inset-top)) 16px 15px;position:sticky;top:0;z-index:3}.brand{font-size:21px;font-weight:850}.sub{font-size:12px;opacity:.78;margin-top:3px}
+.wrap{padding:12px;max-width:1100px;margin:auto}.hidden{display:none!important}.panel,.card{background:#fff;border-radius:16px;box-shadow:0 2px 12px #17203312}.panel{padding:15px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{padding:13px;min-height:100px}.label{font-size:12px;color:#677084;font-weight:700}.value{font-size:25px;font-weight:850;margin-top:6px;line-height:1.1}.small{font-size:12px;color:#677084;margin-top:6px}.section{font-size:17px;font-weight:850;margin:18px 2px 9px}
+.statusrow,.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:space-between}.dot{width:10px;height:10px;border-radius:50%;background:#9aa4b2}.dot.ok{background:#27ae60}.dot.warn{background:#f2994a}.dot.bad{background:#d92d20}
+button{border:0;border-radius:11px;padding:11px 13px;font-weight:750;background:#2f80ed;color:#fff;font-size:14px}button.secondary{background:#e9eef7;color:#172033}button.danger{background:#f9e4e2;color:#9f221d}
+input{width:100%;padding:13px;border:1px solid #d9dee8;border-radius:10px;font-size:16px;margin:6px 0 12px}.login{max-width:430px;margin:28px auto}.error{color:#b42318;font-weight:650}
+.bar{height:11px;border-radius:999px;background:#e9edf3;overflow:hidden;margin-top:8px}.bar>div{height:100%;background:#2f80ed}.split{display:flex;justify-content:space-between;gap:8px;margin-top:7px;font-size:12px;color:#677084}
+.shiftopen{border-left:5px solid #27ae60}.shiftclosed{border-left:5px solid #98a2b3}.alert{border-left:5px solid #d92d20}.rows{display:grid;gap:9px}.row{padding:12px;border-radius:12px;background:#f8fafc}.rowtop{display:flex;justify-content:space-between;gap:8px;font-weight:800}.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.chip{font-size:11px;background:#edf2f7;border-radius:999px;padding:5px 7px}
+.chart{display:flex;align-items:flex-end;gap:5px;height:145px;margin-top:12px;overflow:hidden}.col{flex:1;min-width:13px;text-align:center}.colbar{background:#2f80ed;border-radius:5px 5px 0 0;min-height:2px}.coldate{font-size:9px;color:#7a8497;margin-top:4px;white-space:nowrap}.footer{text-align:center;color:#7a8497;font-size:11px;padding:18px 0 32px}
+@media(min-width:760px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.span2{grid-column:span 2}}
+</style></head><body>
+<header><div class="brand">RB GERENCIAL</div><div class="sub">Alta gerencia · RB Parqueadero · solo lectura</div></header>
 <div class="wrap">
-  <section id="loginView" class="panel login">
-    <h2>Ingreso Gerencia</h2>
-    <div class="small">Use el usuario gerente que creó en Supabase. El usuario RB Sync no debe usarse aquí.</div>
-    <label>Correo</label><input id="email" type="email" autocomplete="username" placeholder="gerencia@...">
-    <label>Contraseña</label><input id="password" type="password" autocomplete="current-password" placeholder="Contraseña">
-    <button id="loginBtn" onclick="login()">Ingresar</button>
-    <div id="loginStatus" class="small"></div>
-  </section>
+<section id="loginView" class="panel login"><h2>Ingreso Gerencia</h2><div class="small">Use su usuario MANAGER de Supabase. RB Sync no debe usarse aquí.</div><label>Correo</label><input id="email" type="email"><label>Contraseña</label><input id="password" type="password"><button onclick="login()">Ingresar</button><div id="loginStatus" class="small"></div></section>
+<main id="dashboardView" class="hidden">
+<div class="panel toolbar"><div class="statusrow"><span id="liveDot" class="dot"></span><b id="status">Conectando…</b></div><div><button class="secondary" onclick="loadAll(true)">Actualizar</button> <button class="danger" onclick="logout()">Salir</button></div></div>
 
-  <main id="dashboardView" class="hidden">
-    <div class="panel toolbar">
-      <div class="statusrow"><span id="liveDot" class="dot"></span><span id="status" class="live">Conectando…</span></div>
-      <div><button class="secondary" onclick="loadDashboard(true)">Actualizar</button> <button class="danger" onclick="logout()">Salir</button></div>
-    </div>
+<div class="section">Turno actual</div>
+<div id="currentShift" class="panel shiftopen"><b>Consultando turno…</b></div>
 
-    <div class="section">Ingresos</div>
-    <div class="grid">
-      <div class="card"><div class="label">Ingresos hoy</div><div class="value" id="today">—</div><div class="small" id="avgTicket">—</div></div>
-      <div class="card"><div class="label">Ingresos mes</div><div class="value" id="month">—</div></div>
-      <div class="card"><div class="label">Parqueo hoy</div><div class="value" id="parkingToday">—</div></div>
-      <div class="card"><div class="label">Mensualidades hoy</div><div class="value" id="monthlyToday">—</div></div>
-    </div>
-
-    <div class="section">Ocupación ahora</div>
-    <div class="grid">
-      <div class="card span2"><div class="label">Uso de capacidad</div><div class="value" id="utilization">—</div><div class="bar"><div id="utilBar"></div></div><div class="split"><span id="occupiedText">—</span><span id="freeText">—</span></div></div>
-      <div class="card"><div class="label">Carros dentro</div><div class="value" id="cars">—</div></div>
-      <div class="card"><div class="label">Motos dentro</div><div class="value" id="motos">—</div></div>
-      <div class="card"><div class="label">Bicicletas dentro</div><div class="value" id="bikes">—</div></div>
-      <div class="card"><div class="label">Mensuales reservados fuera</div><div class="value" id="reserved">—</div></div>
-      <div class="card"><div class="label">Entradas hoy</div><div class="value" id="entries">—</div></div>
-      <div class="card"><div class="label">Salidas hoy</div><div class="value" id="exits">—</div></div>
-    </div>
-
-    <div class="section">Caja y medios de pago</div>
-    <div class="grid">
-      <div class="card"><div class="label">Efectivo hoy</div><div class="value" id="cash">—</div></div>
-      <div class="card"><div class="label">Transferencias</div><div class="value" id="transfer">—</div></div>
-      <div class="card"><div class="label">Tarjetas</div><div class="value" id="card">—</div></div>
-      <div class="card"><div class="label">Otros medios</div><div class="value" id="other">—</div></div>
-      <div class="card"><div class="label">Turnos abiertos</div><div class="value" id="openShifts">—</div></div>
-    </div>
-
-    <div class="section">Mensualidades</div>
-    <div class="grid">
-      <div class="card"><div class="label">Activas</div><div class="value" id="monthlyActive">—</div></div>
-      <div class="card"><div class="label">Con puesto asignado</div><div class="value" id="monthlyAssigned">—</div></div>
-      <div class="card"><div class="label">Vencen en 7 días</div><div class="value" id="monthlyExpiring">—</div></div>
-      <div class="card"><div class="label">Vencidas activas</div><div class="value" id="monthlyOverdue">—</div></div>
-    </div>
-
-    <div class="panel" style="margin-top:14px"><b>Última sincronización</b><div id="updated" style="margin-top:8px">—</div><div id="freshness" class="small">—</div></div>
-    <div class="footer">RB Cloud 3.2.4 · El computador del parqueadero continúa siendo la fuente operativa principal.</div>
-  </main>
+<div class="section">Resumen ejecutivo</div>
+<div class="grid">
+<div class="card"><div class="label">Ingresos hoy</div><div class="value" id="today">—</div><div class="small" id="avgTicket">—</div></div>
+<div class="card"><div class="label">Ingresos mes</div><div class="value" id="month">—</div></div>
+<div class="card span2"><div class="label">Capacidad comprometida</div><div class="value" id="utilization">—</div><div class="bar"><div id="utilBar"></div></div><div class="split"><span id="occupiedText">—</span><span id="freeText">—</span></div></div>
 </div>
-<script src="config.js"></script><script src="app.js"></script>
-</body></html>
+
+<div class="section">Ingresos por línea · mes</div>
+<div class="grid">
+<div class="card"><div class="label">🚗 Carros por hora</div><div class="value" id="pcMonth">—</div><div class="small" id="pcPct">—</div></div>
+<div class="card"><div class="label">🏍️ Motos por hora</div><div class="value" id="pmMonth">—</div><div class="small" id="pmPct">—</div></div>
+<div class="card"><div class="label">🚗 Mensualidades carros</div><div class="value" id="mcMonth">—</div><div class="small" id="mcPct">—</div></div>
+<div class="card"><div class="label">🏍️ Mensualidades motos</div><div class="value" id="mmMonth">—</div><div class="small" id="mmPct">—</div></div>
+</div>
+
+<div class="section">Comparativa</div>
+<div class="grid">
+<div class="card"><div class="label">Por hora · mes</div><div class="value" id="hourMonth">—</div></div>
+<div class="card"><div class="label">Mensualidades · mes</div><div class="value" id="monthlyMonth">—</div></div>
+<div class="card"><div class="label">Carros · total mes</div><div class="value" id="carsMonth">—</div></div>
+<div class="card"><div class="label">Motos · total mes</div><div class="value" id="motosMonth">—</div></div>
+</div>
+
+<div class="section">Últimos 14 días</div><div class="panel"><div id="dailyChart" class="chart"></div><div class="small">Ingreso total diario. Se irá formando el histórico desde la activación de V1.1.</div></div>
+
+<div class="section">Turnos y caja</div><div id="shiftList" class="rows"></div>
+
+<div class="section">Operación ahora</div>
+<div class="grid">
+<div class="card"><div class="label">Carros dentro</div><div class="value" id="cars">—</div></div>
+<div class="card"><div class="label">Motos dentro</div><div class="value" id="motos">—</div></div>
+<div class="card"><div class="label">Puestos libres</div><div class="value" id="free">—</div></div>
+<div class="card"><div class="label">Mensuales reservados fuera</div><div class="value" id="reserved">—</div></div>
+</div>
+
+<div class="section">Caja hoy</div>
+<div class="grid"><div class="card"><div class="label">Efectivo</div><div class="value" id="cash">—</div></div><div class="card"><div class="label">Transferencias</div><div class="value" id="transfer">—</div></div><div class="card"><div class="label">Tarjetas</div><div class="value" id="card">—</div></div><div class="card"><div class="label">Otros</div><div class="value" id="other">—</div></div></div>
+
+<div class="panel" style="margin-top:14px"><b>Última sincronización</b><div id="updated" style="margin-top:7px">—</div><div id="freshness" class="small">—</div></div>
+<div class="footer">RB Gerencial V1.1 · RB Cloud 3.2.5 · El PC de RB continúa siendo la fuente operativa principal.</div>
+</main></div><script src="config.js"></script><script src="app.js"></script></body></html>

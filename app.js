@@ -1,65 +1,26 @@
-const cfg = window.RB_CLOUD || {};
-let session = null;
-let timer = null;
-
-function money(v){return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(v||0))}
-function el(id){return document.getElementById(id)}
-function saveSession(s){session=s; localStorage.setItem('rb_cloud_session',JSON.stringify(s))}
-function clearSession(){session=null;localStorage.removeItem('rb_cloud_session')}
-function setLive(kind,text){el('status').textContent=text; el('liveDot').className='dot '+kind}
-
-async function authPassword(email,password){
-  const r=await fetch(cfg.supabaseUrl+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:cfg.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-  if(!r.ok) throw new Error('Correo o contraseña incorrectos.');
-  return await r.json();
+const cfg=window.RB_CLOUD||{};let session=null,timer=null;
+const el=id=>document.getElementById(id);const money=v=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(v||0));
+const put=(id,v)=>{if(el(id))el(id).textContent=v};const pct=(v,t)=>t?((100*Number(v||0)/t).toFixed(1)+'% del mes'):'0% del mes';
+function saveSession(s){session=s;localStorage.setItem('rb_cloud_session',JSON.stringify(s))}function clearSession(){session=null;localStorage.removeItem('rb_cloud_session')}
+function setLive(k,t){put('status',t);el('liveDot').className='dot '+k}
+async function authPassword(email,password){let r=await fetch(cfg.supabaseUrl+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:cfg.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({email,password})});if(!r.ok)throw new Error('Correo o contraseña incorrectos.');return r.json()}
+async function refreshSession(){let r=await fetch(cfg.supabaseUrl+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:cfg.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:session.refresh_token})});if(!r.ok)throw new Error('Sesión vencida');let d=await r.json();saveSession(d);return d}
+async function login(){put('loginStatus','Ingresando…');try{saveSession(await authPassword(el('email').value.trim(),el('password').value));el('password').value='';showDashboard();await loadAll(true)}catch(e){el('loginStatus').innerHTML='<span class="error">'+e.message+'</span>'}}
+function logout(){clearInterval(timer);timer=null;clearSession();el('dashboardView').classList.add('hidden');el('loginView').classList.remove('hidden');put('loginStatus','Sesión cerrada.')}
+function showDashboard(){el('loginView').classList.add('hidden');el('dashboardView').classList.remove('hidden');if(timer)clearInterval(timer);timer=setInterval(()=>loadAll(false),(Number(cfg.refreshSeconds)||15)*1000)}
+async function api(table,query){if(!session?.access_token)throw new Error('Sesión no iniciada');let url=cfg.supabaseUrl+'/rest/v1/'+table+'?'+query;let headers={apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token};let r=await fetch(url,{headers});if(r.status===401){await refreshSession();headers.Authorization='Bearer '+session.access_token;r=await fetch(url,{headers})}if(!r.ok)throw new Error(await r.text());return r.json()}
+function renderSnapshot(d){
+ put('today',money(d.revenue_today));put('month',money(d.revenue_month));put('avgTicket','Ticket promedio: '+money(d.avg_ticket_today));
+ let u=Number(d.utilization_pct||0);put('utilization',u.toFixed(1)+'%');el('utilBar').style.width=Math.min(100,u)+'%';put('occupiedText',(d.occupied_now||0)+' físicamente dentro');put('freeText',(d.free_now||0)+' disponibles');
+ put('cars',d.cars_inside||0);put('motos',d.motorcycles_inside||0);put('free',d.free_now||0);put('reserved',d.reserved_monthly_outside||0);
+ put('cash',money(d.cash_today));put('transfer',money(d.transfer_today));put('card',money(d.card_today));put('other',money(d.other_today));
+ let pc=+d.parking_car_month||0,pm=+d.parking_moto_month||0,mc=+d.monthly_car_month||0,mm=+d.monthly_moto_month||0,total=pc+pm+mc+mm;
+ put('pcMonth',money(pc));put('pmMonth',money(pm));put('mcMonth',money(mc));put('mmMonth',money(mm));put('pcPct',pct(pc,total));put('pmPct',pct(pm,total));put('mcPct',pct(mc,total));put('mmPct',pct(mm,total));
+ put('hourMonth',money(pc+pm));put('monthlyMonth',money(mc+mm));put('carsMonth',money(pc+mc));put('motosMonth',money(pm+mm));
+ let t=new Date(d.created_at),age=Math.max(0,Math.round((Date.now()-t)/1000));put('updated',t.toLocaleString('es-CO'));put('freshness',age<90?'Datos en tiempo real · '+age+' s desde última sincronización':'Último dato hace '+Math.round(age/60)+' min');setLive(age<90?'ok':age<300?'warn':'bad',age<90?'EN LÍNEA':'DATOS RETRASADOS');
+ if(d.current_shift_id){let opened=new Date(d.current_shift_opened_at),mins=Math.max(0,Math.floor((Date.now()-opened)/60000));el('currentShift').innerHTML='<div class="rowtop"><span>🟢 TURNO ABIERTO — '+(d.current_shift_operator||'')+'</span><span>#'+d.current_shift_id+'</span></div><div class="value">'+money(d.current_shift_revenue)+'</div><div class="small">Abierto '+opened.toLocaleString('es-CO')+' · '+Math.floor(mins/60)+' h '+(mins%60)+' min · '+(d.current_shift_operations||0)+' operaciones · Base '+money(d.current_shift_opening_cash)+'</div>'}else el('currentShift').innerHTML='<b>Sin turno abierto en este momento</b>';
 }
-async function refreshSession(){
-  if(!session?.refresh_token) throw new Error('Sesión vencida');
-  const r=await fetch(cfg.supabaseUrl+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:cfg.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:session.refresh_token})});
-  if(!r.ok) throw new Error('Sesión vencida');
-  const d=await r.json(); saveSession(d); return d;
-}
-async function login(){
-  el('loginStatus').textContent='Ingresando…';
-  try{
-    const d=await authPassword(el('email').value.trim(),el('password').value);
-    saveSession(d); el('password').value=''; showDashboard(); await loadDashboard(true);
-  }catch(e){el('loginStatus').innerHTML='<span class="error">'+e.message+'</span>'}
-}
-function logout(){clearInterval(timer);timer=null;clearSession();el('dashboardView').classList.add('hidden');el('loginView').classList.remove('hidden');el('loginStatus').textContent='Sesión cerrada.'}
-function showDashboard(){el('loginView').classList.add('hidden');el('dashboardView').classList.remove('hidden'); if(timer)clearInterval(timer); timer=setInterval(()=>loadDashboard(false),(Number(cfg.refreshSeconds)||15)*1000)}
-async function apiLatest(){
-  if(!session?.access_token) throw new Error('Sesión no iniciada');
-  let url=cfg.supabaseUrl+'/rest/v1/manager_snapshots?select=*&branch_code=eq.'+encodeURIComponent(cfg.branchCode||'RB-MANIZALES-01')+'&order=created_at.desc&limit=1';
-  let r=await fetch(url,{headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token}});
-  if(r.status===401){await refreshSession();r=await fetch(url,{headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token}})}
-  if(!r.ok) throw new Error(await r.text());
-  return await r.json();
-}
-function put(id,v){el(id).textContent=v}
-function render(d){
-  put('today',money(d.revenue_today)); put('month',money(d.revenue_month)); put('parkingToday',money(d.parking_revenue_today)); put('monthlyToday',money(d.monthly_revenue_today));
-  put('avgTicket','Ticket promedio: '+money(d.avg_ticket_today));
-  const u=Number(d.utilization_pct||0); put('utilization',u.toFixed(1)+'%'); el('utilBar').style.width=Math.max(0,Math.min(100,u))+'%';
-  put('occupiedText',(d.occupied_now||0)+' vehículos dentro'); put('freeText',(d.free_now||0)+' puestos disponibles');
-  put('cars',d.cars_inside||0);put('motos',d.motorcycles_inside||0);put('bikes',d.bicycles_inside||0);put('reserved',d.reserved_monthly_outside||0);put('entries',d.entries_today||0);put('exits',d.exits_today||0);
-  put('cash',money(d.cash_today));put('transfer',money(d.transfer_today));put('card',money(d.card_today));put('other',money(d.other_today));put('openShifts',d.open_shift_count||0);
-  put('monthlyActive',d.monthly_active||0);put('monthlyAssigned',d.monthly_assigned||0);put('monthlyExpiring',d.monthly_expiring||0);put('monthlyOverdue',d.monthly_overdue||0);
-  const t=new Date(d.created_at);put('updated',t.toLocaleString('es-CO'));
-  const age=Math.max(0,Math.round((Date.now()-t.getTime())/1000));
-  put('freshness',age<90?'Datos en tiempo real · '+age+' s desde la última sincronización':'Último dato recibido hace '+Math.round(age/60)+' min');
-  setLive(age<90?'ok':age<300?'warn':'bad',age<90?'EN LÍNEA':'DATOS RETRASADOS');
-}
-async function loadDashboard(manual){
-  try{
-    if(manual)setLive('warn','Actualizando…');
-    const rows=await apiLatest(); if(!rows.length)throw new Error('Aún no hay snapshots de RB Parqueadero.'); render(rows[0]);
-  }catch(e){
-    if(String(e.message).includes('JWT')||String(e.message).includes('Sesión')){logout();el('loginStatus').innerHTML='<span class="error">Vuelva a iniciar sesión.</span>';return}
-    setLive('bad','SIN CONEXIÓN'); el('freshness').innerHTML='<span class="error">'+e.message+'</span>';
-  }
-}
-(function init(){
-  try{session=JSON.parse(localStorage.getItem('rb_cloud_session')||'null')}catch(_){session=null}
-  if(session?.access_token){showDashboard();loadDashboard(true)}
-})();
+function renderShifts(rows){let box=el('shiftList');box.innerHTML='';if(!rows.length){box.innerHTML='<div class="panel">Aún no hay turnos sincronizados.</div>';return}rows.forEach(s=>{let diff=s.difference==null?'—':money(s.difference),cls=s.status==='ABIERTO'?'shiftopen':'shiftclosed';if(s.difference&&Number(s.difference)!==0)cls+=' alert';let div=document.createElement('div');div.className='panel '+cls;div.innerHTML='<div class="rowtop"><span>'+(s.status==='ABIERTO'?'🟢 ':'✓ ')+(s.operator_name||'')+'</span><span>Turno #'+s.local_shift_id+'</span></div><div class="value">'+money(s.revenue_total)+'</div><div class="small">'+new Date(s.opened_at).toLocaleString('es-CO')+(s.closed_at?' → '+new Date(s.closed_at).toLocaleString('es-CO'):' · ABIERTO')+'</div><div class="chips"><span class="chip">🚗 Hora '+money(s.parking_car)+'</span><span class="chip">🏍️ Hora '+money(s.parking_moto)+'</span><span class="chip">🚗 Mensual '+money(s.monthly_car)+'</span><span class="chip">🏍️ Mensual '+money(s.monthly_moto)+'</span><span class="chip">Efectivo '+money(s.cash_amount)+'</span><span class="chip">Transfer. '+money(s.transfer_amount)+'</span><span class="chip">Tarjeta '+money(s.card_amount)+'</span><span class="chip">'+s.operations+' operaciones</span>'+(s.status!=='ABIERTO'?'<span class="chip">Esperado '+money(s.expected_cash)+'</span><span class="chip">Contado '+money(s.counted_cash)+'</span><span class="chip">Diferencia '+diff+'</span>':'')+'</div>';box.appendChild(div)})}
+function renderDaily(rows){let box=el('dailyChart');box.innerHTML='';let max=Math.max(1,...rows.map(x=>+x.revenue_total||0));rows.slice().reverse().forEach(r=>{let c=document.createElement('div');c.className='col';let h=Math.max(2,Math.round(120*(+r.revenue_total||0)/max));c.innerHTML='<div title="'+money(r.revenue_total)+'" class="colbar" style="height:'+h+'px"></div><div class="coldate">'+String(r.business_date).slice(5)+'</div>';box.appendChild(c)})}
+async function loadAll(manual){try{if(manual)setLive('warn','Actualizando…');let b=encodeURIComponent(cfg.branchCode||'RB-MANIZALES-01');let [snap,shifts,daily]=await Promise.all([api('manager_snapshots','select=*&branch_code=eq.'+b+'&order=created_at.desc&limit=1'),api('manager_shift_summaries','select=*&branch_code=eq.'+b+'&order=opened_at.desc&limit=12'),api('manager_daily_summaries','select=*&branch_code=eq.'+b+'&order=business_date.desc&limit=14')]);if(!snap.length)throw new Error('Aún no hay snapshots.');renderSnapshot(snap[0]);renderShifts(shifts);renderDaily(daily)}catch(e){if(String(e.message).includes('JWT')||String(e.message).includes('Sesión')){logout();el('loginStatus').innerHTML='<span class="error">Vuelva a iniciar sesión.</span>';return}setLive('bad','SIN CONEXIÓN');put('freshness',e.message)}}
+(function(){try{session=JSON.parse(localStorage.getItem('rb_cloud_session')||'null')}catch(_){session=null}if(session?.access_token){showDashboard();loadAll(true)}})();
