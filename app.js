@@ -9,6 +9,22 @@ async function login(){put('loginStatus','Ingresando…');try{saveSession(await 
 function logout(){clearInterval(timer);timer=null;clearSession();el('dashboardView').classList.add('hidden');el('loginView').classList.remove('hidden');put('loginStatus','Sesión cerrada.')}
 function showDashboard(){el('loginView').classList.add('hidden');el('dashboardView').classList.remove('hidden');if(timer)clearInterval(timer);timer=setInterval(()=>loadAll(false),(Number(cfg.refreshSeconds)||15)*1000)}
 async function api(table,query){if(!session?.access_token)throw new Error('Sesión no iniciada');let url=cfg.supabaseUrl+'/rest/v1/'+table+'?'+query;let headers={apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token};let r=await fetch(url,{headers});if(r.status===401){await refreshSession();headers.Authorization='Bearer '+session.access_token;r=await fetch(url,{headers})}if(!r.ok)throw new Error(await r.text());return r.json()}
+
+function bogotaDayBounds(){
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const v=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+ const y=Number(v.year),m=Number(v.month),d=Number(v.day);
+ const start=new Date(Date.UTC(y,m-1,d,5,0,0));
+ const end=new Date(Date.UTC(y,m-1,d+1,5,0,0));
+ return {start:start.toISOString(),end:end.toISOString()};
+}
+function renderTodayFromShifts(rows){
+ let total=0,ops=0,cash=0,transfer=0,card=0,other=0;
+ rows.forEach(s=>{total+=Number(s.revenue_total||0);ops+=Number(s.operations||0);cash+=Number(s.cash_amount||0);transfer+=Number(s.transfer_amount||0);card+=Number(s.card_amount||0);other+=Number(s.other_amount||0)});
+ put('today',money(total));put('avgTicket','Ticket promedio: '+money(ops?total/ops:0));
+ put('cash',money(cash));put('transfer',money(transfer));put('card',money(card));put('other',money(other));
+}
+
 function renderSnapshot(d){
  put('today',money(d.revenue_today));put('month',money(d.revenue_month));put('avgTicket','Ticket promedio: '+money(d.avg_ticket_today));
  let u=Number(d.utilization_pct||0);put('utilization',u.toFixed(1)+'%');el('utilBar').style.width=Math.min(100,u)+'%';put('occupiedText',(d.occupied_now||0)+' físicamente dentro');put('freeText',(d.free_now||0)+' disponibles');
@@ -36,5 +52,5 @@ function renderManagerHistory(rows){
 }
 async function loadManagerHistory(){let from=document.getElementById('histFrom').value,to=document.getElementById('histTo').value,op=document.getElementById('histOperator').value.trim();let b=encodeURIComponent(cfg.branchCode||'RB-MANIZALES-01'),q='select=*&branch_code=eq.'+b+'&occurred_at=gte.'+encodeURIComponent(from+'T00:00:00')+'&occurred_at=lte.'+encodeURIComponent(to+'T23:59:59')+'&order=occurred_at.desc&limit=1000';if(op)q+='&operator_out=eq.'+encodeURIComponent(op);renderManagerHistory(await api('manager_movements',q));}
 function downloadHistoryCsv(){let rows=window._rbHistory||[];if(!rows.length)return;let keys=['movement_type','occurred_at','plate','vehicle_type','space_code','entry_at','exit_at','amount','payment_method','operator_in','operator_out','helmets','notes'];let csv=[keys.join(',')].concat(rows.map(r=>keys.map(k=>'"'+String(r[k]??'').replaceAll('"','""')+'"').join(','))).join('\n');let blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(blob),x=document.createElement('a');x.href=u;x.download='RB_historial.csv';x.click();URL.revokeObjectURL(u)}
-async function loadAll(manual){try{if(manual)setLive('warn','Actualizando…');let b=encodeURIComponent(cfg.branchCode||'RB-MANIZALES-01');let [snap,shifts,daily]=await Promise.all([api('manager_snapshots','select=*&branch_code=eq.'+b+'&order=created_at.desc&limit=1'),api('manager_shift_summaries','select=*&branch_code=eq.'+b+'&order=opened_at.desc&limit=12'),api('manager_daily_summaries','select=*&branch_code=eq.'+b+'&order=business_date.desc&limit=14')]);if(!snap.length)throw new Error('Aún no hay snapshots.');renderSnapshot(snap[0]);renderCurrentShift(shifts);renderShifts(shifts);renderDaily(daily)}catch(e){if(String(e.message).includes('JWT')||String(e.message).includes('Sesión')){logout();el('loginStatus').innerHTML='<span class="error">Vuelva a iniciar sesión.</span>';return}setLive('bad','SIN CONEXIÓN');put('freshness',e.message)}}
+async function loadAll(manual){try{if(manual)setLive('warn','Actualizando…');let b=encodeURIComponent(cfg.branchCode||'RB-MANIZALES-01'),bd=bogotaDayBounds();let [snap,shifts,daily,todayShifts]=await Promise.all([api('manager_snapshots','select=*&branch_code=eq.'+b+'&order=created_at.desc&limit=1'),api('manager_shift_summaries','select=*&branch_code=eq.'+b+'&order=opened_at.desc&limit=12'),api('manager_daily_summaries','select=*&branch_code=eq.'+b+'&order=business_date.desc&limit=14'),api('manager_shift_summaries','select=*&branch_code=eq.'+b+'&opened_at=gte.'+encodeURIComponent(bd.start)+'&opened_at=lt.'+encodeURIComponent(bd.end)+'&order=opened_at.asc')]);if(!snap.length)throw new Error('Aún no hay snapshots.');renderSnapshot(snap[0]);renderTodayFromShifts(todayShifts);renderCurrentShift(shifts);renderShifts(shifts);renderDaily(daily)}catch(e){if(String(e.message).includes('JWT')||String(e.message).includes('Sesión')){logout();el('loginStatus').innerHTML='<span class="error">Vuelva a iniciar sesión.</span>';return}setLive('bad','SIN CONEXIÓN');put('freshness',e.message)}}
 (function(){try{session=JSON.parse(localStorage.getItem('rb_cloud_session')||'null')}catch(_){session=null}if(session?.access_token){showDashboard();loadAll(true)}})();
